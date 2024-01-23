@@ -438,6 +438,9 @@ def get_multiple_files_with_out_threads(files_dict: dict, is_dry_run: bool):
             print("    [-] Number: {}/{} - {} : Already Exists".format(file_index, total_files, local_file_path))
 
         else:
+
+            # TODO : Check in old backup folder,
+            #  if exists - copy/move it to the destination instead of downloading of file
             if is_dry_run:
                 print("    [-] Skipped (Dry Run): {}".format(local_file_path))
 
@@ -529,6 +532,8 @@ def get_multiple_files_thread(bearer: str, url: str, local: str, now: int, len_f
 
     if local.endswith("mcrypt1"):
         if not os.path.isfile(local + "-metadata"):
+            #  if exists - copy/move it to the destination instead of downloading of file
+            # TODO : Check in old backup folder,
             response: Response = requests.get(
                 "https://backup.googleapis.com/v1/{}".format(url),
                 headers={"Authorization": "Bearer {}".format(bearer)}
