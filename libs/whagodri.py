@@ -38,7 +38,17 @@ class WaBackup:
     """
 
     def __init__(self, gmail, password, android_id, celnumbr, oauth_token):
-        if not oauth_token:
+        master_token = None
+        if oauth_token:
+            print("Exchanging web oauth_token to master token...")
+            token = gpsoauth.exchange_token(gmail, oauth_token, android_id)
+            if "Token" in token:
+                print("Granted.")
+                master_token = token['Token']
+            else:
+                error(token)
+                quit()
+        else:
             print("Requesting access to Google...")
             token = gpsoauth.perform_master_login(email=gmail, password=password, android_id=android_id)
             if token.get("Error") == "NeedsBrowser":
@@ -116,10 +126,14 @@ class WaBackup:
                     print("Granted.")
                     oauth_token = token['Token']
 
+            # This password auth logic is wrong and needs fixing
+            # But for now let's just do it like it was previously
+            master_token = oauth_token
+
         print("Requesting authentication for Google Drive...")
         auth = gpsoauth.perform_oauth(
             gmail,
-            oauth_token,
+            master_token,
             android_id,
             "oauth2:https://www.googleapis.com/auth/drive.appdata",
             "com.whatsapp",
