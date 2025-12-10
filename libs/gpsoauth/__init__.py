@@ -14,6 +14,13 @@ from . import google
 
 __version__ = version(__package__)
 
+SSL_DEFAULT_CIPHERS = None
+if version("urllib3") < "2.0.0a1":
+    # pylint: disable-next=no-name-in-module
+    from urllib3.util.ssl_ import DEFAULT_CIPHERS
+
+    SSL_DEFAULT_CIPHERS = DEFAULT_CIPHERS
+
 # The key is distirbuted with Google Play Services.
 # This one is from version 7.3.29.
 B64_KEY_7_3_29 = (
@@ -63,7 +70,8 @@ class AuthHTTPAdapter(requests.adapters.HTTPAdapter):
         Authentication.
         """
         context = SSLContext()
-        context.set_ciphers(ssl_.DEFAULT_CIPHERS)
+        if SSL_DEFAULT_CIPHERS:
+            context.set_ciphers(SSL_DEFAULT_CIPHERS)
         context.verify_mode = ssl.CERT_REQUIRED
         context.options &= ~ssl_.OP_NO_TICKET
         self.poolmanager = PoolManager(*args, ssl_context=context, **kwargs)
