@@ -14,6 +14,13 @@ from . import google
 
 __version__ = version(__package__)
 
+SSL_DEFAULT_CIPHERS = None
+if version("urllib3") < "2.0.0a1":
+    # pylint: disable-next=no-name-in-module
+    from urllib3.util.ssl_ import DEFAULT_CIPHERS
+
+    SSL_DEFAULT_CIPHERS = DEFAULT_CIPHERS
+
 # The key is distirbuted with Google Play Services.
 # This one is from version 7.3.29.
 B64_KEY_7_3_29 = (
@@ -63,7 +70,8 @@ class AuthHTTPAdapter(requests.adapters.HTTPAdapter):
         Authentication.
         """
         context = SSLContext()
-        context.set_ciphers(ssl_.DEFAULT_CIPHERS)
+        if SSL_DEFAULT_CIPHERS:
+            context.set_ciphers(SSL_DEFAULT_CIPHERS)
         context.verify_mode = ssl.CERT_REQUIRED
         context.options &= ~ssl_.OP_NO_TICKET
         self.poolmanager = PoolManager(*args, ssl_context=context, **kwargs)
@@ -184,6 +192,60 @@ def perform_master_login_oauth(
         "add_account": 1,
         "Token": oauth_token,
         "callerSig": "38918a453d07199354f8b19af05ec6562ced5788",
+    }
+
+    return _perform_auth_request(data, proxy)
+
+
+def exchange_token(
+    email: str,
+    token: str,
+    android_id: str,
+    service: str = "ac2dm",
+    device_country: str = "us",
+    operator_country: str = "us",
+    lang: str = "en",
+    sdk_version: int = 17,
+    proxy: MutableMapping[str, str] | None = None,
+    client_sig: str = "38918a453d07199354f8b19af05ec6562ced5788",
+) -> dict[str, str]:
+    """
+    Exchanges a web oauth_token for a master token.
+
+    Return a dict, eg::
+        {
+            'Auth': '...',
+            'Email': 'email@gmail.com',
+            'GooglePlusUpgrade': '1',
+            'LSID': '...',
+            'PicasaUser': 'My Name',
+            'RopRevision': '1',
+            'RopText': ' ',
+            'SID': '...',
+            'Token': 'oauth2rt_1/...',
+            'firstName': 'My',
+            'lastName': 'Name',
+            'services': 'hist,mail,googleme,...'
+        }
+    """
+
+    data: dict[str, int | str | bytes] = {
+        "accountType": "HOSTED_OR_GOOGLE",
+        "Email": email,
+        "has_permission": 1,
+        "add_account": 1,
+        "ACCESS_TOKEN": 1,
+        "Token": token,
+        "service": service,
+        "source": "android",
+        "androidId": android_id,
+        "device_country": device_country,
+        "operatorCountry": operator_country,
+        "lang": lang,
+        "sdk_version": sdk_version,
+        "client_sig": client_sig,
+        "callerSig": client_sig,
+        "droidguard_results": "dummy123",
     }
 
     return _perform_auth_request(data, proxy)
